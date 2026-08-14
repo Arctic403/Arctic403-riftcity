@@ -145,16 +145,4 @@ function render(){
     }
   }catch(e){/* ignore */}
 
-  document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerve+'/'+p.maxNerve; document.getElementById('healthTop').textContent=p.health+'/'+p.maxHealth; document.getElementById('happyTop').textContent=p.happiness; document.getElementById('levelPill').textContent='Level '+p.level; document.getElementById('home').innerHTML=pageHome(); document.getElementById('character').innerHTML=pageCharacter(); document.getElementById('gym').innerHTML=pageGym(); document.getElementById('crime').innerHTML=pageCrime(); document.getElementById('city').innerHTML=pageCity(); // minimal other pages
- const l=logs(); document.getElementById('more').innerHTML='<div class="card"><h3>Logs</h3><div class="log">'+l.map(x=>'<div>'+x+'</div>').join('')+'</div><div style="margin-top:8px"><button class="btn secondary" onclick="resetGame()">Reset Save</button></div></div>';
-}
-
-// tab wiring (use closest to handle inner element clicks)
-document.getElementById('tabs').addEventListener('click',e=>{ const btn = e.target.closest('.tab'); if(!btn) return; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); const pageName = btn.dataset.page; if(!pageName) return; document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active')); const pageEl = document.getElementById(pageName); if(pageEl) pageEl.classList.add('active'); render(); });
-
-function updateTime(){ if(Date.now()>=p.happinessResetAt){ p.happiness=p.defaultHappiness; p.happinessResetAt=Date.now()+1800000; addLog('Happiness reset to default.'); } if(p.jail>0)p.jail--; if(p.hospital>0)p.hospital--; if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5); if(p.nerve<p.maxNerve)p.nerve++; if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2); save(); render(); }
-setInterval(updateTime,60000);
-render();
-</script>
-</body>
-</html>
+  document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerv[...],
