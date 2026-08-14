@@ -1,153 +1,163 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RiftCity - Single Player</title>
+<meta name="theme-color" content="#0b0f14">
+<title>RiftCity</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3;font-family:system-ui,-apple-system,sans-serif}
-header{padding:18px 16px;background:#161b22;border-bottom:1px solid #30363d;position:sticky;top:0;z-index:5}
-h1{margin:0;font-size:24px}.sub{color:#8b949e;font-size:12px}
-main{max-width:1000px;margin:auto;padding:14px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;margin-bottom:12px}
-.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #21262d}.stat:last-child{border:0}
-button{width:100%;padding:12px;margin:5px 0;background:#238636;color:white;border:0;border-radius:8px;font-weight:700}
-button.secondary{background:#30363d}button.danger{background:#da3633}
-button:disabled{opacity:.45}.bar{height:8px;background:#21262d;border-radius:8px;overflow:hidden;margin-top:4px}.fill{height:100%;background:#2f81f7}
-.log{height:150px;overflow:auto;background:#0d1117;border-radius:8px;padding:10px;font-size:13px}
-.item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #21262d}
-.badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#30363d;font-size:11px;margin:2px}
-@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}.wide{grid-column:span 2}.full{grid-column:1/-1}}
+:root{--bg:#080b10;--panel:#111720;--panel2:#171e29;--line:#26303d;--text:#edf2f7;--muted:#8995a5;--accent:#3b82f6;--good:#31c48d;--bad:#ef5350;--gold:#e4b84a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#121a25 0,#080b10 55%);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh}
+button{font:inherit;cursor:pointer}.app{min-height:100vh}.top{position:sticky;top:0;z-index:10;background:rgba(8,11,16,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:12px 14px}.brand{font-weight:900;font-size:21px;letter-spacing:.5px}.toprow{display:flex;justify-content:space-between;align-items:center}.topstats{display:flex;gap:8px;overflow:auto;margin-top:9px}.pill{white-space:nowrap;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:12px}.content{max-width:1050px;margin:auto;padding:14px 14px 92px}.page{display:none}.page.active{display:block}.title{font-size:24px;margin:4px 0 4px}.subtitle{color:var(--muted);margin-bottom:14px}.grid{display:grid;gap:12px}.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.15)}.card h3{margin:0 0 10px;font-size:16px}.stat{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #202936}.stat:last-child{border-bottom:0}.muted{color:var(--muted)}.bar{height:9px;background:#202936;border-radius:99px;overflow:hidden;margin:5px 0 9px}.bar i{display:block;height:100%;background:var(--accent)}.bar.good i{background:var(--good)}.btn{border:1px solid #315d9f;background:#1d4ed8;color:#fff;border-radius:9px;padding:10px 12px;width:100%;margin-top:7px;font-weight:750}.btn.secondary{background:#202936;border-color:#334052}.btn.good{background:#147a5c;border-color:#269d7b}.btn.danger{background:#8f2929;border-color:#bd4444}.btn:disabled{opacity:.4;cursor:not-allowed}.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;position:fixed;bottom:0;left:0;right:0;z-index:20;padding:7px max(7px,env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom));background:rgba(8,11,16,.97);border-top:1px solid var(--line)}.tab{background:transparent;color:var(--muted);border:0;border-radius:9px;padding:7px 2px;font-size:11px}.tab.active{color:#fff;background:#182230}.tab b{display:block;font-size:18px;margin-bottom:1px}.action{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meterline{display:flex;justify-content:space-between;font-size:12px}.badge{display:inline-block;background:#202936;border:1px solid #334052;border-radius:99px;padding:3px 7px;font-size:11px}.log{max-height:190px;overflow:auto;background:#090d13;border:1px solid var(--line);border-radius:9px;padding:9px;font-size:12px}.log div{padding:5px 0;border-bottom:1px solid #18202a}.item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #202936;padding:9px 0}.item:last-child{border:0}.enemy{display:flex;justify-content:space-between;align-items:center}.enemy .face{font-size:45px}.notice{padding:10px;border-radius:10px;background:#171f2a;border:1px solid var(--line);color:#c9d3df}.locked{opacity:.55}.small{font-size:12px}.navlist{display:grid;gap:8px}.navbtn{text-align:left;padding:13px;border:1px solid var(--line);background:#151d28;color:#fff;border-radius:10px}.navbtn span{float:right;color:var(--muted)}@media(min-width:700px){.content{padding-bottom:30px}.tabs{position:sticky;top:73px;margin:auto;max-width:1050px;border:1px solid var(--line);border-radius:12px;bottom:auto}.grid3{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
-<header><h1>RiftCity</h1><div class="sub">Single-player prototype • Local save • No server required</div></header>
-<main>
-<div id="app"></div>
+<div class="app">
+<header class="top">
+ <div class="toprow"><div class="brand">RIFTCITY</div><span class="badge" id="levelPill">Level 1</span></div>
+ <div class="topstats">
+  <span class="pill">💰 <b id="cashTop">$0</b></span><span class="pill">❤️ <b id="healthTop">0/0</b></span>
+  <span class="pill">⚡ <b id="energyTop">0/0</b></span><span class="pill">🧠 <b id="nerveTop">0/0</b></span>
+  <span class="pill">😊 <b id="happyTop">0</b></span>
+ </div>
+</header>
+<nav class="tabs" id="tabs">
+ <button class="tab active" data-page="home"><b>⌂</b>Home</button>
+ <button class="tab" data-page="character"><b>◉</b>Character</button>
+ <button class="tab" data-page="gym"><b>⚔</b>Gym</button>
+ <button class="tab" data-page="city"><b>▦</b>City</button>
+ <button class="tab" data-page="more"><b>☰</b>More</button>
+</nav>
+<main class="content">
+<section class="page active" id="home"></section>
+<section class="page" id="character"></section>
+<section class="page" id="gym"></section>
+<section class="page" id="city"></section>
+<section class="page" id="more"></section>
 </main>
+</div>
 <script>
-const KEY="riftcity_save_v1";
-const base={
- name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,
- health:100,maxHealth:100,happiness:100,defaultHappiness:100,happinessResetAt:Date.now()+1800000,
- stats:{strength:10,speed:10,defense:10,dexterity:10},
- inventory:{},
- crimes:{},gym:{},jail:0,hospital:0
-};
+const KEY="riftcity_save_v2", LOGKEY="riftcity_log_v2";
+const fresh=()=>({name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,health:100,maxHealth:100,happiness:100,defaultHappiness:100,happinessResetAt:Date.now()+1800000,stats:{strength:10,speed:10,defense:10,dexterity:10},inventory:{},crimes:{},gymSessions:0,jail:0,hospital:0,weapon:null,armor:null});
 let p=load();
-function load(){try{return {...base,...JSON.parse(localStorage.getItem(KEY))}}catch(e){return structuredClone(base)}}
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x?Object.assign(fresh(),x,{stats:Object.assign(fresh().stats,x.stats||{}),inventory:x.inventory||{},crimes:x.crimes||{}}):fresh()}catch{return fresh()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(p))}
+function logs(){try{return JSON.parse(localStorage.getItem(LOGKEY)||"[]")}catch{return[]}}
+function addLog(s){let a=logs();a.unshift(new Date().toLocaleTimeString()+" • "+s);localStorage.setItem(LOGKEY,JSON.stringify(a.slice(0,50)))}
 function fmt(n){return Math.floor(n).toLocaleString()}
-function xpNeeded(){return 100+p.level*50}
-function addLog(t){let a=JSON.parse(localStorage.getItem("rift_log")||"[]");a.unshift(new Date().toLocaleTimeString()+" • "+t);localStorage.setItem("rift_log",JSON.stringify(a.slice(0,40)))}
-function log(){return JSON.parse(localStorage.getItem("rift_log")||"[]")}
-function gainXP(n){
- p.xp+=n;
- while(p.xp>=xpNeeded()){p.xp-=xpNeeded();p.level++;p.maxEnergy+=2;p.maxNerve+=1;p.maxHealth+=5;p.health=p.maxHealth;addLog("Level up! You reached level "+p.level+".")}
+function xpNeed(){return Math.floor(100*Math.pow(1.12,p.level-1))}
+function xpPct(){return Math.min(100,p.xp/xpNeed()*100)}
+function totalStats(){return Object.values(p.stats).reduce((a,b)=>a+b,0)}
+function gymGain(stat){
+ const base=1.9;
+ const happy=1+Math.min(p.happiness,500)/1000;
+ const levelDiminish=1/(1+Math.pow(p.stats[stat]/250,0.72));
+ const longTerm=1/(1+Math.pow(totalStats()/1200,0.55));
+ const roll=.82+Math.random()*.36;
+ return Math.max(.01,base*happy*levelDiminish*longTerm*roll);
 }
 function spendEnergy(n){if(p.energy<n){addLog("Not enough energy.");return false}p.energy-=n;return true}
-function crime(name,cost,reward,success){
- if(p.jail>0||p.hospital>0)return addLog("You can't commit crimes while unavailable.");
+function gainXP(n){p.xp+=n;while(p.xp>=xpNeed()){p.xp-=xpNeed();p.level++;p.maxEnergy+=2;p.maxNerve+=1;p.maxHealth+=5;p.health=p.maxHealth;addLog("Level up! You reached level "+p.level+". New systems may now be available.")}}
+function unlock(level){return p.level>=level}
+function relax(){if(!spendEnergy(10))return render();p.happiness=Math.min(1000,p.happiness+25);addLog("Relaxed: -10 energy, +25 happiness.");save();render()}
+function train(stat){
+ if(p.jail||p.hospital)return addLog("You cannot train while unavailable.");
+ if(!spendEnergy(10))return render();
+ let g=gymGain(stat);p.stats[stat]+=g;p.happiness=Math.max(0,p.happiness-5);p.gymSessions++;gainXP(7);
+ addLog("Gym: "+stat+" +"+g.toFixed(2)+" • happiness -5.");save();render()
+}
+function crime(name,cost,reward,baseChance){
+ if(p.jail||p.hospital)return addLog("You cannot commit crimes while unavailable.");
  if(p.nerve<cost){addLog("Not enough nerve.");return}
  p.nerve-=cost;
- if(Math.random()<success){
-   let r=Math.floor(reward*(.7+Math.random()*.8));
-   p.cash+=r;gainXP(12+p.level*2);p.crimes[name]=(p.crimes[name]||0)+1;
-   addLog("Crime succeeded: +$"+fmt(r)+" and XP.");
- }else{
-   p.jail=Math.min(20,3+Math.floor(Math.random()*5));gainXP(3);addLog("Crime failed. Jail time: "+p.jail+" minutes.");
- }
- save();render();
-}
-function relax(){
- if(!spendEnergy(10))return render();
- p.happiness=Math.min(1000,p.happiness+25);
- addLog("You relaxed: -10 energy, +25 happiness.");
- save();render();
-}
-function train(stat){
- if(!spendEnergy(10))return render();
- let gain=Math.max(1,Math.floor((1+Math.random()*3)*(1+p.happiness/500)));
- p.stats[stat]+=gain;p.happiness=Math.max(0,p.happiness-5);gainXP(5);addLog("Gym training increased "+stat+" by "+gain+" and reduced happiness by 5.");save();render()
-}
-function shop(item,cost){
- if(p.cash<cost)return addLog("Not enough cash.");
- p.cash-=cost;p.inventory[item]=(p.inventory[item]||0)+1;addLog("Bought "+item+".");save();render()
-}
-function updateHappiness(){
- if(Date.now()>=p.happinessResetAt){
-   p.happiness=p.defaultHappiness;
-   p.happinessResetAt=Date.now()+1800000;
-   addLog("Happiness reset to default.");
- }
-}
-function tick(){
- updateHappiness();
- if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5);
- if(p.nerve<p.maxNerve)p.nerve++;
- if(p.jail>0)p.jail--;
- if(p.hospital>0)p.hospital--;
- if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2);
+ let chance=Math.min(.9,baseChance+p.level*.008);
+ if(Math.random()<chance){let r=Math.floor(reward*(.75+Math.random()*.5)*(1+p.level*.012));p.cash+=r;p.crimes[name]=(p.crimes[name]||0)+1;gainXP(15+p.level*2);addLog(name+" succeeded: +$"+fmt(r)+" and XP.")}
+ else{p.jail=3+Math.floor(Math.random()*7);gainXP(4);addLog(name+" failed. Jail: "+p.jail+" minutes.")}
  save();render()
 }
-setInterval(tick,60000);
-updateHappiness();
+function fight(enemy){
+ if(p.hospital||p.jail)return addLog("You cannot fight while unavailable.");
+ let power=p.stats.strength*(1+p.stats.dexterity/1000), defense=p.stats.defense, speed=p.stats.speed;
+ let enemyPower=enemy.power;
+ let hit=.62+p.stats.dexterity/(p.stats.dexterity+enemyPower*2.4)*.28;
+ if(Math.random()>hit){addLog("You missed "+enemy.name+".");p.energy=Math.max(0,p.energy-5);save();render();return}
+ let damage=Math.max(1,Math.round(power*.13*(.85+Math.random()*.3)-enemy.defense*.035));
+ let taken=Math.max(1,Math.round(enemyPower*.08*(.85+Math.random()*.3)-defense*.025));
+ p.health=Math.max(0,p.health-taken);
+ if(p.health<=0){p.hospital=8;addLog("You lost the fight and were sent to hospital for 8 minutes.")}
+ else if(damage>=enemy.hp){let reward=enemy.reward+Math.floor(Math.random()*enemy.reward);p.cash+=reward;gainXP(enemy.xp);addLog("Defeated "+enemy.name+": +$"+fmt(reward)+", +"+enemy.xp+" XP.");}
+ else addLog("Hit "+enemy.name+" for "+damage+" damage. The NPC's health is simulated for this encounter.");
+ p.energy=Math.max(0,p.energy-5);save();render()
+}
+function deposit(){if(p.cash<100)return addLog("You need $100 cash.");p.cash-=100;p.bank+=100;save();render()}
+function withdraw(){if(p.bank<100)return addLog("You need $100 in the bank.");p.bank-=100;p.cash+=100;save();render()}
+function buy(item,cost){if(p.cash<cost)return addLog("Not enough cash.");p.cash-=cost;p.inventory[item]=(p.inventory[item]||0)+1;addLog("Bought "+item+".");save();render()}
+function equip(type,item,cost){
+ if(p.cash<cost)return addLog("Not enough cash.");
+ p.cash-=cost;p[type]=item;addLog("Equipped "+item+".");save();render()
+}
+function updateTime(){
+ if(Date.now()>=p.happinessResetAt){p.happiness=p.defaultHappiness;p.happinessResetAt=Date.now()+1800000;addLog("Happiness reset to default.")}
+ if(p.jail>0)p.jail--;if(p.hospital>0)p.hospital--;
+ if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5);
+ if(p.nerve<p.maxNerve)p.nerve++;
+ if(p.health<p.maxHealth&&p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2);
+ save();render()
+}
+setInterval(updateTime,60000);
 
-function reset(){
- if(confirm("Delete your RiftCity save?")){localStorage.removeItem(KEY);localStorage.removeItem("rift_log");p=structuredClone(base);addLog("New character created.");save();render()}
-}
-function render(){
- const xpPct=Math.min(100,p.xp/xpNeeded()*100);
- document.getElementById("app").innerHTML=`
- <div class="card">
-  <b>${p.name}</b> <span class="badge">Level ${p.level}</span>
-  <div class="sub">XP ${fmt(p.xp)} / ${fmt(xpNeeded())}</div>
-  <div class="bar"><div class="fill" style="width:${xpPct}%"></div></div>
+function pageHome(){
+ const l=logs();
+ return `<h1 class="title">Welcome back, ${p.name}</h1><div class="subtitle">Build a character over weeks and months, not a weekend.</div>
+ <div class="grid grid2">
+  <div class="card"><h3>Progress</h3><div class="meterline"><span>Level ${p.level}</span><b>${fmt(p.xp)} / ${fmt(xpNeed())} XP</b></div><div class="bar"><i style="width:${xpPct()}%"></i></div><div class="small muted">Higher levels require increasingly more XP.</div></div>
+  <div class="card"><h3>Happiness</h3><div class="stat"><span>Current</span><b>${fmt(p.happiness)}</b></div><div class="stat"><span>Default</span><b>${fmt(p.defaultHappiness)}</b></div><button class="btn good" onclick="relax()" ${p.energy<10?"disabled":""}>Relax • 10 energy → +25</button><div class="small muted">Returns to default every 30 minutes.</div></div>
  </div>
- <div class="grid">
-  <div class="card wide"><h3>Character</h3>
-   <div class="stat"><span>💰 Cash</span><b>$${fmt(p.cash)}</b></div>
-   <div class="stat"><span>🏦 Bank</span><b>$${fmt(p.bank)}</b></div>
-   <div class="stat"><span>❤️ Health</span><b>${p.health}/${p.maxHealth}</b></div>
-   <div class="stat"><span>⚡ Energy</span><b>${p.energy}/${p.maxEnergy}</b></div>
-   <div class="stat"><span>🧠 Nerve</span><b>${p.nerve}/${p.maxNerve}</b></div>
-   <div class="stat"><span>😊 Happiness</span><b>${p.happiness}</b></div>
-   <button onclick="relax()" ${p.energy<10?"disabled":""}>Relax • 10 energy → +25 happiness</button>
-   <div class="sub">Happiness resets to ${p.defaultHappiness} every 30 minutes.</div>
-  </div>
-  <div class="card wide"><h3>Combat Stats</h3>
-   ${Object.entries(p.stats).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${fmt(v)}</b></div>`).join("")}
-  </div>
-  <div class="card wide"><h3>Gym</h3>
-   ${Object.keys(p.stats).map(s=>`<button onclick="train('${s}')" ${p.energy<10?'disabled':''}>Train ${s} • 10 energy</button>`).join("")}
-  </div>
-  <div class="card wide"><h3>Crimes</h3>
-   <button onclick="crime('Pickpocket',3,120,.72)">Pickpocket • 3 nerve</button>
-   <button onclick="crime('Burglary',5,350,.58)">Burglary • 5 nerve</button>
-   <button onclick="crime('Robbery',7,700,.42)">Robbery • 7 nerve</button>
-   <div class="sub">Success improves as you level up later. For now, the city remains mildly judgmental.</div>
-  </div>
-  <div class="card wide"><h3>City Market</h3>
-   <div class="item"><span>Energy Drink</span><button style="width:45%" onclick="shop('Energy Drink',75)">Buy $75</button></div>
-   <div class="item"><span>Training Food</span><button style="width:45%" onclick="shop('Training Food',150)">Buy $150</button></div>
-   <div class="item"><span>Med Kit</span><button style="width:45%" onclick="shop('Med Kit',250)">Buy $250</button></div>
-  </div>
-  <div class="card wide"><h3>Bank</h3>
-   <button onclick="bankDeposit()">Deposit $100</button>
-   <button onclick="bankWithdraw()">Withdraw $100</button>
-  </div>
-  <div class="card full"><h3>Activity</h3><div class="log">${log().map(x=>`<div>${x}</div>`).join("")||"Your RiftCity story starts here."}</div></div>
-  <div class="card full">
-   ${p.jail?`<b>🔒 Jail:</b> ${p.jail} minute(s) remaining`:""}
-   ${p.hospital?`<b>🏥 Hospital:</b> ${p.hospital} minute(s) remaining`:""}
-   <button class="secondary" onclick="save();addLog('Game saved locally.');render()">Save</button>
-   <button class="danger" onclick="reset()">Reset Character</button>
-  </div>
- </div>`;
+ <div class="grid grid2">
+  <div class="card"><h3>Daily loop</h3><div class="navlist"><button class="navbtn" onclick="go('gym')">🏋️ Train your stats <span>→</span></button><button class="navbtn" onclick="go('city')">🏙️ Work the city <span>→</span></button><button class="navbtn" onclick="go('more')">🎒 Manage inventory <span>→</span></button></div></div>
+  <div class="card"><h3>Status</h3>${p.jail?'<div class="notice">🔒 Jail: '+p.jail+' minute(s)</div>':''}${p.hospital?'<div class="notice">🏥 Hospital: '+p.hospital+' minute(s)</div>':''}${!p.jail&&!p.hospital?'<div class="notice">You are free to act.</div>':''}</div>
+ </div>
+ <div class="card"><h3>Recent activity</h3><div class="log">${l.map(x=>`<div>${x}</div>`).join("")||"Your story starts here."}</div></div>`
 }
-function bankDeposit(){if(p.cash>=100){p.cash-=100;p.bank+=100;addLog("Deposited $100.");save();render()}else addLog("You don't have $100 cash.")}
-function bankWithdraw(){if(p.bank>=100){p.bank-=100;p.cash+=100;addLog("Withdrew $100.");save();render()}else addLog("You don't have $100 in the bank.")}
-addLog("Welcome to RiftCity.");
+function pageCharacter(){
+ return `<h1 class="title">Character</h1><div class="subtitle">Your long-term build. There is no magical three-day god mode.</div>
+ <div class="grid grid2"><div class="card"><h3>Core</h3>${[['Level',p.level],['Total stats',totalStats().toFixed(2)],['Gym sessions',p.gymSessions],['Cash','$'+fmt(p.cash)],['Bank','$'+fmt(p.bank)]].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b></div>`).join("")}</div>
+ <div class="card"><h3>Combat build</h3>${Object.entries(p.stats).map(([k,v])=>`<div class="stat"><span>${k[0].toUpperCase()+k.slice(1)}</span><b>${v.toFixed(2)}</b></div>`).join("")}</div></div>
+ <div class="card"><h3>Equipment</h3><div class="stat"><span>Weapon</span><b>${p.weapon||"None"}</b></div><div class="stat"><span>Armor</span><b>${p.armor||"None"}</b></div></div>`
+}
+function pageGym(){
+ return `<h1 class="title">Gym</h1><div class="subtitle">Training gets slower as your character grows. Investment wins, but the curve gets steep.</div>
+ <div class="card"><div class="meterline"><span>Energy</span><b>${p.energy}/${p.maxEnergy}</b></div><div class="bar"><i style="width:${p.energy/p.maxEnergy*100}%"></i></div><div class="small muted">Each session costs 10 energy and reduces happiness by 5.</div></div>
+ <div class="grid grid2">${Object.keys(p.stats).map(s=>`<div class="card"><h3>${s[0].toUpperCase()+s.slice(1)}</h3><div style="font-size:28px;font-weight:900">${p.stats[s].toFixed(2)}</div><div class="small muted">Diminishing returns apply at higher stats.</div><button class="btn" onclick="train('${s}')" ${p.energy<10||p.jail||p.hospital?"disabled":""}>Train • 10 energy</button></div>`).join("")}</div>`
+}
+function pageCity(){
+ const enemies=[{name:"Street Thug",power:25,defense:12,hp:100,reward:100,xp:30,icon:"🥷"},{name:"Gang Enforcer",power:65,defense:35,hp:220,reward:300,xp:80,icon:"🕶️"},{name:"Elite Mercenary",power:150,defense:90,hp:500,reward:900,xp:220,icon:"🪖"}];
+ return `<h1 class="title">RiftCity</h1><div class="subtitle">A city of locations, NPCs and systems. Multiplayer comes later.</div>
+ <div class="grid grid2">
+  <div class="card"><h3>Crimes</h3><button class="btn" onclick="crime('Pickpocket',3,120,.70)">Pickpocket • 3 nerve</button><button class="btn" onclick="crime('Burglary',5,350,.55)">Burglary • 5 nerve</button><button class="btn" onclick="crime('Robbery',7,700,.40)">Robbery • 7 nerve</button><div class="small muted">Crime difficulty scales gradually with level.</div></div>
+  <div class="card"><h3>Combat</h3>${enemies.map(e=>`<div class="item"><span>${e.icon} ${e.name}<br><small class="muted">Power ${e.power} • Reward $${e.reward}</small></span><button class="btn" style="width:42%;margin:0" onclick='fight(${JSON.stringify(e)})'>Fight</button></div>`).join("")}</div>
+  <div class="card"><h3>Market</h3><div class="item"><span>Energy Drink</span><button class="btn" style="width:38%;margin:0" onclick="buy('Energy Drink',75)">Buy $75</button></div><div class="item"><span>Med Kit</span><button class="btn" style="width:38%;margin:0" onclick="buy('Med Kit',250)">Buy $250</button></div></div>
+  <div class="card"><h3>Bank</h3><div class="stat"><span>Balance</span><b>$${fmt(p.bank)}</b></div><div class="action"><button class="btn" onclick="deposit()">Deposit $100</button><button class="btn secondary" onclick="withdraw()">Withdraw $100</button></div></div>
+ </div>`
+}
+function pageMore(){
+ return `<h1 class="title">More</h1><div class="subtitle">Systems that don't need to clutter the main dashboard.</div>
+ <div class="grid grid2">
+  <div class="card"><h3>Inventory</h3>${Object.keys(p.inventory).length?Object.entries(p.inventory).map(([k,v])=>`<div class="stat"><span>${k}</span><b>x${v}</b></div>`).join(""):'<div class="muted">Inventory is empty.</div>'}</div>
+  <div class="card"><h3>Equipment shop</h3><button class="btn" onclick="equip('weapon','Rusty Pistol',500)">Rusty Pistol • $500</button><button class="btn" onclick="equip('armor','Street Jacket',650)">Street Jacket • $650</button><div class="small muted">Equipment bonuses will be expanded with the combat overhaul.</div></div>
+  <div class="card"><h3>Coming soon</h3><div class="notice">Jobs • Properties • Travel • Missions • Factions • More NPCs • Deeper economy</div></div>
+  <div class="card"><h3>Save</h3><button class="btn secondary" onclick="save();addLog('Game saved locally.');render()">Save locally</button><button class="btn danger" onclick="resetGame()">Reset character</button><div class="small muted">Your current save lives in this browser. No account or server is required.</div></div>
+ </div>`
+}
+function resetGame(){if(confirm("Delete your RiftCity save and start over?")){localStorage.removeItem(KEY);localStorage.removeItem(LOGKEY);p=fresh();addLog("New character created.");save();render();go("home")}}
+function go(id){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.page===id));render()}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>go(b.dataset.page)));
+function render(){
+ document.getElementById("levelPill").textContent="Level "+p.level;
+ document.getElementById("cashTop").textContent="$"+fmt(p.cash);document.getElementById("healthTop").textContent=fmt(p.health)+"/"+fmt(p.maxHealth);document.getElementById("energyTop").textContent=fmt(p.energy)+"/"+fmt(p.maxEnergy);document.getElementById("nerveTop").textContent=fmt(p.nerve)+"/"+fmt(p.maxNerve);document.getElementById("happyTop").textContent=fmt(p.happiness);
+ document.getElementById("home").innerHTML=pageHome();document.getElementById("character").innerHTML=pageCharacter();document.getElementById("gym").innerHTML=pageGym();document.getElementById("city").innerHTML=pageCity();document.getElementById("more").innerHTML=pageMore();
+}
+if(!logs().length)addLog("Welcome to RiftCity. Your long game starts now.");
 save();render();
 </script>
 </body>
