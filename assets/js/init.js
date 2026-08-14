@@ -69,6 +69,24 @@
     if(typeof render === 'function') render();
   };
 
+  // Energy regen configuration
+  // By default: give 5 energy every 600 seconds (10 minutes)
+  const ENERGY_REGEN_SECONDS = 600;
+  const ENERGY_REGEN_AMOUNT = 5;
+
+  // helper to update the visible energy countdown
+  function updateEnergyTimer(){
+    const el = document.getElementById('energyTimer');
+    if(!el) return;
+    const tickMs = (typeof ENERGY_REGEN_SECONDS === 'number' ? ENERGY_REGEN_SECONDS : 600) * 1000;
+    const amount = (typeof ENERGY_REGEN_AMOUNT === 'number' ? ENERGY_REGEN_AMOUNT : 5);
+    const last = p._lastEnergyTick || Date.now();
+    const elapsed = Date.now() - last;
+    const nextInMs = Math.max(0, tickMs - (elapsed % tickMs));
+    const sec = Math.ceil(nextInMs / 1000);
+    el.textContent = sec > 0 ? `+${amount} in ${sec}s` : `+${amount} now`;
+  }
+
   // implement train: costs 10 energy and increases the chosen stat (including speed)
   window.train = window.train || function(stat){
     try{
@@ -83,16 +101,12 @@
       addLog && addLog(`Trained ${stat}: +${gain.toFixed(2)} (${stat}=${(p.stats[stat]||0).toFixed(2)}) -${cost} energy`);
       try{ if(typeof save === 'function') save(); }catch(e){}
       if(typeof render === 'function') render();
+      if(typeof updateEnergyTimer === 'function') updateEnergyTimer();
     }catch(e){ console.error('train failed', e); }
   };
 
   // basic no-op actions to avoid missing function errors (others remain placeholders)
   ['buy','deposit','withdraw','resetGame','equip','payBail'].forEach(name=>{ if(typeof window[name] !== 'function') window[name] = function(){ addLog && addLog(name+"() not implemented"); }; });
-
-  // Energy regen configuration
-  // By default: give 5 energy every 600 seconds (10 minutes)
-  const ENERGY_REGEN_SECONDS = 600;
-  const ENERGY_REGEN_AMOUNT = 5;
 
   // Page builders
   window.pageHome = window.pageHome || function(){
@@ -269,6 +283,9 @@
         }catch(e){ tzEl.textContent = 'EST'; }
       }
 
+      // ensure energy timer helper also ran
+      try{ if(typeof updateEnergyTimer === 'function') updateEnergyTimer(); }catch(e){}
+
     }catch(e){ console.error('render failed', e); }
   };
 
@@ -300,8 +317,10 @@
             p.energy = Math.min(p.maxEnergy||100, (p.energy||0) + ticks * ENERGY_REGEN_AMOUNT);
             p._lastEnergyTick = (p._lastEnergyTick || now) + ticks * tickMs;
             try{ if(typeof save === 'function') save(); }catch(e){}
+            if(typeof updateEnergyTimer === 'function') updateEnergyTimer();
             if(typeof render === 'function') render();
           } else {
+            if(typeof updateEnergyTimer === 'function') updateEnergyTimer();
             if(typeof render === 'function') render();
           }
         }catch(e){ console.error('energy tick failed', e); }
