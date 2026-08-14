@@ -90,7 +90,8 @@ function tick(){
  if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2);
  save();render()
 }
-setInterval(tick,60000);\nupdateHappiness();
+setInterval(tick,60000);
+updateHappiness();
 
 function reset(){
  if(confirm("Delete your RiftCity save?")){localStorage.removeItem(KEY);localStorage.removeItem("rift_log");p=structuredClone(base);addLog("New character created.");save();render()}
