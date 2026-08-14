@@ -6,3 +6,7 @@ body{margin:0;background:radial-gradient(circle at top,#121a25 0,#080b10 55%);co
 .btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
 .city-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+
+/* Defensive modal pointer-events: overlay shouldn't block clicks unless active */
+.modal-overlay{pointer-events:none}
+.modal-overlay.active{pointer-events:auto}

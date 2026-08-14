@@ -136,7 +136,16 @@ function pageCity(){ return `
   </div>
 ` }
 
-function render(){ document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerve+'/'+p.maxNerve; document.getElementById('healthTop').textContent=p.health+'/'+p.maxHealth; document.getElementById('happyTop').textContent=p.happiness; document.getElementById('levelPill').textContent='Level '+p.level; document.getElementById('home').innerHTML=pageHome(); document.getElementById('character').innerHTML=pageCharacter(); document.getElementById('gym').innerHTML=pageGym(); document.getElementById('crime').innerHTML=pageCrime(); document.getElementById('city').innerHTML=pageCity(); // minimal other pages
+function render(){
+  // Defensive: if modal has no actions, ensure it's hidden so it doesn't block UI
+  try{
+    const actionsDiv = document.getElementById('modalActions');
+    if(!actionsDiv || actionsDiv.children.length === 0){
+      document.getElementById('modal').classList.remove('active');
+    }
+  }catch(e){/* ignore */}
+
+  document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerve+'/'+p.maxNerve; document.getElementById('healthTop').textContent=p.health+'/'+p.maxHealth; document.getElementById('happyTop').textContent=p.happiness; document.getElementById('levelPill').textContent='Level '+p.level; document.getElementById('home').innerHTML=pageHome(); document.getElementById('character').innerHTML=pageCharacter(); document.getElementById('gym').innerHTML=pageGym(); document.getElementById('crime').innerHTML=pageCrime(); document.getElementById('city').innerHTML=pageCity(); // minimal other pages
  const l=logs(); document.getElementById('more').innerHTML='<div class="card"><h3>Logs</h3><div class="log">'+l.map(x=>'<div>'+x+'</div>').join('')+'</div><div style="margin-top:8px"><button class="btn secondary" onclick="resetGame()">Reset Save</button></div></div>';
 }
 
