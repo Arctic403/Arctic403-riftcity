@@ -29,7 +29,7 @@ button:disabled{opacity:.45}.bar{height:8px;background:#21262d;border-radius:8px
 const KEY="riftcity_save_v1";
 const base={
  name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,
- health:100,maxHealth:100,happiness:100,
+ health:100,maxHealth:100,happiness:100,defaultHappiness:100,happinessResetAt:Date.now()+1800000,
  stats:{strength:10,speed:10,defense:10,dexterity:10},
  inventory:{},
  crimes:{},gym:{},jail:0,hospital:0
@@ -59,16 +59,30 @@ function crime(name,cost,reward,success){
  }
  save();render();
 }
+function relax(){
+ if(!spendEnergy(10))return render();
+ p.happiness=Math.min(1000,p.happiness+25);
+ addLog("You relaxed: -10 energy, +25 happiness.");
+ save();render();
+}
 function train(stat){
  if(!spendEnergy(10))return render();
  let gain=Math.max(1,Math.floor((1+Math.random()*3)*(1+p.happiness/500)));
- p.stats[stat]+=gain;gainXP(5);addLog("Gym training increased "+stat+" by "+gain+".");save();render()
+ p.stats[stat]+=gain;p.happiness=Math.max(0,p.happiness-5);gainXP(5);addLog("Gym training increased "+stat+" by "+gain+" and reduced happiness by 5.");save();render()
 }
 function shop(item,cost){
  if(p.cash<cost)return addLog("Not enough cash.");
  p.cash-=cost;p.inventory[item]=(p.inventory[item]||0)+1;addLog("Bought "+item+".");save();render()
 }
+function updateHappiness(){
+ if(Date.now()>=p.happinessResetAt){
+   p.happiness=p.defaultHappiness;
+   p.happinessResetAt=Date.now()+1800000;
+   addLog("Happiness reset to default.");
+ }
+}
 function tick(){
+ updateHappiness();
  if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5);
  if(p.nerve<p.maxNerve)p.nerve++;
  if(p.jail>0)p.jail--;
@@ -76,7 +90,7 @@ function tick(){
  if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2);
  save();render()
 }
-setInterval(tick,60000);
+setInterval(tick,60000);\nupdateHappiness();
 
 function reset(){
  if(confirm("Delete your RiftCity save?")){localStorage.removeItem(KEY);localStorage.removeItem("rift_log");p=structuredClone(base);addLog("New character created.");save();render()}
@@ -97,7 +111,8 @@ function render(){
    <div class="stat"><span>⚡ Energy</span><b>${p.energy}/${p.maxEnergy}</b></div>
    <div class="stat"><span>🧠 Nerve</span><b>${p.nerve}/${p.maxNerve}</b></div>
    <div class="stat"><span>😊 Happiness</span><b>${p.happiness}</b></div>
-   <button onclick="p.happiness=Math.min(1000,p.happiness+25);addLog('You relaxed. Happiness increased.');save();render()">Relax (+25 happiness)</button>
+   <button onclick="relax()" ${p.energy<10?"disabled":""}>Relax • 10 energy → +25 happiness</button>
+   <div class="sub">Happiness resets to ${p.defaultHappiness} every 30 minutes.</div>
   </div>
   <div class="card wide"><h3>Combat Stats</h3>
    ${Object.entries(p.stats).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${fmt(v)}</b></div>`).join("")}
