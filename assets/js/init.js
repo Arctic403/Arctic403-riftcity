@@ -58,8 +58,25 @@
     if(typeof render === 'function') render();
   };
 
-  // basic no-op actions to avoid missing function errors
-  ['train','buy','deposit','withdraw','resetGame','equip','payBail'].forEach(name=>{ if(typeof window[name] !== 'function') window[name] = function(){ addLog && addLog(name+"() not implemented"); }; });
+  // implement train: costs 10 energy and increases the chosen stat (including speed)
+  window.train = window.train || function(stat){
+    try{
+      if(!p) p = fresh();
+      const cost = 10; // energy cost per training session
+      if((p.energy||0) < cost){ addLog && addLog('Not enough energy to train.'); return; }
+      p.energy -= cost;
+      // simple gain formula: base + small scaling by level
+      const gain = 0.5 + ((p.level||1)-1)*0.05;
+      p.stats = p.stats || {};
+      p.stats[stat] = (p.stats[stat]||0) + gain;
+      addLog && addLog(`Trained ${stat}: +${gain.toFixed(2)} (${stat}=${(p.stats[stat]||0).toFixed(2)}) -${cost} energy`);
+      try{ if(typeof save === 'function') save(); }catch(e){}
+      if(typeof render === 'function') render();
+    }catch(e){ console.error('train failed', e); }
+  };
+
+  // basic no-op actions to avoid missing function errors (others remain placeholders)
+  ['buy','deposit','withdraw','resetGame','equip','payBail'].forEach(name=>{ if(typeof window[name] !== 'function') window[name] = function(){ addLog && addLog(name+"() not implemented"); }; });
 
   // Page builders
   window.pageHome = window.pageHome || function(){
@@ -105,11 +122,12 @@
   window.pageGym = window.pageGym || function(){
     return `
       <h1 class="title">Gym</h1>
-      <div class="subtitle">Train to increase stats. Costs energy.</div>
+      <div class="subtitle">Train to increase stats. Costs energy (10 per session).</div>
       <div class="grid grid3">
-        <div class="card"><h3>Strength</h3><p class="small">Train to increase strength</p><button class="btn" onclick="train('strength')">Train Strength</button></div>
-        <div class="card"><h3>Defense</h3><p class="small">Train to increase defense</p><button class="btn" onclick="train('defense')">Train Defense</button></div>
-        <div class="card"><h3>Dexterity</h3><p class="small">Train to increase dexterity</p><button class="btn" onclick="train('dexterity')">Train Dexterity</button></div>
+        <div class="card"><h3>Strength</h3><div class="small">Current: ${(p.stats.strength||0).toFixed? (p.stats.strength||0).toFixed(2) : (p.stats.strength||0)}</div><p class="small">Train to increase strength</p><button class="btn" onclick="train('strength')">Train Strength (-10 Energy)</button></div>
+        <div class="card"><h3>Defense</h3><div class="small">Current: ${(p.stats.defense||0).toFixed? (p.stats.defense||0).toFixed(2) : (p.stats.defense||0)}</div><p class="small">Train to increase defense</p><button class="btn" onclick="train('defense')">Train Defense (-10 Energy)</button></div>
+        <div class="card"><h3>Dexterity</h3><div class="small">Current: ${(p.stats.dexterity||0).toFixed? (p.stats.dexterity||0).toFixed(2) : (p.stats.dexterity||0)}</div><p class="small">Train to increase dexterity</p><button class="btn" onclick="train('dexterity')">Train Dexterity (-10 Energy)</button></div>
+        <div class="card"><h3>Speed</h3><div class="small">Current: ${(p.stats.speed||0).toFixed? (p.stats.speed||0).toFixed(2) : (p.stats.speed||0)}</div><p class="small">Train to increase speed</p><button class="btn" onclick="train('speed')">Train Speed (-10 Energy)</button></div>
       </div>
     `;
   };
