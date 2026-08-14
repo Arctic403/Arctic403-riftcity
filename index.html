@@ -50,7 +50,7 @@ const fresh = ()=>({ name:"Rifter", level:1, xp:0, cash:500, bank:0, energy:100,
 let p = load();
 function fmt(n){return Math.floor(n).toLocaleString();}
 function xpNeed(){return Math.floor(100*Math.pow(1.12,p.level-1));}
-function xpPct(){return Math.min(100,p.xp/xpNeed()*100);}
+function xpPct(){return Math.min(100,p.xp/xpNeed()*100);} 
 function totalStats(){return Object.values(p.stats).reduce((a,b)=>a+b,0);} 
 function gymGain(stat){const base=1.9;const happy=1+Math.min(p.happiness,500)/1000;const levelDiminish=1/(1+Math.pow(p.stats[stat]/250,0.72));const longTerm=1/(1+Math.pow(totalStats()/1200,0.55));const roll=0.82+Math.random()*0.36;return Math.max(0.01,base*happy*levelDiminish*longTerm*roll);} 
 function spendEnergy(n){ if(p.energy<n){ addLog("Not enough energy."); return false;} p.energy-=n; return true;} 
@@ -58,6 +58,27 @@ function gainXP(n){ p.xp+=n; while(p.xp>=xpNeed()){ p.xp-=xpNeed(); p.level++; p
 function showModal(title,text,actions){ document.getElementById('modalTitle').textContent=title; document.getElementById('modalText').textContent=text; const actionsDiv=document.getElementById('modalActions'); actionsDiv.innerHTML=''; actions.forEach(action=>{ const btn=document.createElement('button'); btn.className='btn'; btn.textContent=action.text; btn.onclick=()=>{ action.callback(); document.getElementById('modal').classList.remove('active'); }; actionsDiv.appendChild(btn); }); document.getElementById('modal').classList.add('active'); }
 
 function attemptCrime(n,reward,chance){ const roll=Math.random(); const finalChance=Math.min(0.9,chance+p.level*0.008); let outcome, finalReward=0; if(roll<finalChance*0.10){ outcome='critical'; p.jail=7+Math.floor(Math.random()*9); p.wanted=Math.min(100,p.wanted+18); p.bounty+=Math.floor(reward*0.8); gainXP(6); addLog('⚠️ CRITICAL FAIL: '+n+' went badly. You were caught.'); } else if(roll<finalChance){ outcome='success'; finalReward=Math.floor(reward*(0.75+Math.random()*0.5)*(1+p.level*0.012)); p.cash+=finalReward; p.crimes[n]=(p.crimes[n]||0)+1; gainXP(15+p.level*2); addLog('✅ SUCCESS: '+n+' worked. +$'+fmt(finalReward)+' and XP.'); } else if(roll<finalChance+(1-finalChance)*0.22){ outcome='failed'; p.wanted=Math.min(100,p.wanted+6); addLog('❌ FAILED: '+n+' failed, but you escaped.'); } else { outcome='arrested'; p.jail=3+Math.floor(Math.random()*7); p.wanted=0; p.bounty+=Math.floor(reward*0.35); gainXP(4); addLog('🚨 ARRESTED: '+n+' failed and police caught you.'); } p.lastEncounter={type:'crime',name:n,outcome,reward:finalReward}; save(); render(); }
+
+// Minimal Home page so render() doesn't fail
+function pageHome(){
+  return `
+    <h1 class="title">Welcome back, ${p.name}</h1>
+    <div class="subtitle">Build a character over weeks and months, not a weekend.</div>
+
+    <div class="grid grid2">
+      <div class="card">
+        <h3>Overview</h3>
+        <div class="meterline"><span>Level ${p.level}</span><b>${fmt(p.xp)} / ${fmt(xpNeed())} XP</b></div>
+        <div class="bar"><i style="width:${xpPct()}%"></i></div>
+        <div class="small">Cash: $${fmt(p.cash)}</div>
+      </div>
+      <div class="card">
+        <h3>Last</h3>
+        <div class="small">${p.lastEncounter?JSON.stringify(p.lastEncounter):'No recent events'}</div>
+      </div>
+    </div>
+  `;
+}
 
 function pageCrime(){ return `
   <h1 class="title">Crime</h1>
