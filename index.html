@@ -38,7 +38,7 @@ button{font:inherit;cursor:pointer}.app{min-height:100vh}.top{position:sticky;to
 </div>
 <script>
 const KEY="riftcity_save_v2", LOGKEY="riftcity_log_v2";
-const fresh=()=>({name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,health:100,maxHealth:100,happiness:100,defaultHappiness:100,happinessResetAt:Date.now()+1800000,stats:{strength:10,speed:10,defense:10,dexterity:10},inventory:{},crimes:{},gymSessions:0,jail:0,hospital:0,weapon:null,armor:null});
+const fresh=()=>({name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,health:100,maxHealth:100,happiness:100,defaultHappiness:100,happinessResetAt:Date.now()+1800000,stats:{strength:10,speed:10,defense:10,dexterity:10},inventory:{},crimes:{},gymSessions:0,jail:0,hospital:0,weapon:null,armor:null,bounty:0,wanted:0,lastEncounter:null});
 let p=load();
 function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x?Object.assign(fresh(),x,{stats:Object.assign(fresh().stats,x.stats||{}),inventory:x.inventory||{},crimes:x.crimes||{}}):fresh()}catch{return fresh()}}
 function save(){localStorage.setItem(KEY,JSON.stringify(p))}
@@ -66,31 +66,120 @@ function train(stat){
  let g=gymGain(stat);p.stats[stat]+=g;p.happiness=Math.max(0,p.happiness-5);p.gymSessions++;gainXP(7);
  addLog("Gym: "+stat+" +"+g.toFixed(2)+" • happiness -5.");save();render()
 }
-function crime(name,cost,reward,baseChance){
- if(p.jail||p.hospital)return addLog("You cannot commit crimes while unavailable.");
- if(p.nerve<cost){addLog("Not enough nerve.");return}
- p.nerve-=cost;
- let chance=Math.min(.9,baseChance+p.level*.008);
- if(Math.random()<chance){let r=Math.floor(reward*(.75+Math.random()*.5)*(1+p.level*.012));p.cash+=r;p.crimes[name]=(p.crimes[name]||0)+1;gainXP(15+p.level*2);addLog(name+" succeeded: +$"+fmt(r)+" and XP.")}
- else{p.jail=3+Math.floor(Math.random()*7);gainXP(4);addLog(name+" failed. Jail: "+p.jail+" minutes.")}
+function crime(n,c,r,b){
+ if(p.jail||p.hospital){addLog('You cannot commit crimes while unavailable.');return}
+ if(p.nerve<c){addLog('Not enough nerve.');return}
+ p.nerve-=c;
+ const roll=Math.random();
+ const chance=Math.min(.9,b+p.level*.008);
+ let outcome, reward=0;
+ if(roll < chance*.10){
+   outcome="critical";
+   p.jail=7+Math.floor(Math.random()*9);
+   p.wanted=Math.min(100,p.wanted+18);
+   p.bounty+=Math.floor(r*.8);
+   xp(6);
+   addLog('⚠️ CRITICAL FAIL: '+n+' went badly. You were caught, wanted level increased, and a bounty was placed on you.');
+ }else if(roll < chance){
+   outcome="success";
+   reward=Math.floor(r*(.75+Math.random()*.5)*(1+p.level*.012));
+   p.cash+=reward;p.crimes[n]=(p.crimes[n]||0)+1;xp(15+p.level*2);
+   addLog('✅ SUCCESS: '+n+' worked. +$'+fmt(reward)+' and XP.');
+ }else if(roll < chance+(1-chance)*.22){
+   outcome="failed";
+   p.wanted=Math.min(100,p.wanted+6);
+   addLog('❌ FAILED: '+n+' failed, but you escaped before police arrived.');
+ }else{
+   outcome="arrested";
+   p.jail=3+Math.floor(Math.random()*7);
+   p.wanted=Math.min(100,p.wanted+10);
+   p.bounty+=Math.floor(r*.35);
+   xp(4);
+   addLog('🚨 ARRESTED: '+n+' failed and police caught you.');
+ }
+ p.lastEncounter={type:'crime',name:n,outcome,reward};
  save();render()
 }
-function fight(enemy){
- if(p.hospital||p.jail)return addLog("You cannot fight while unavailable.");
- let power=p.stats.strength*(1+p.stats.dexterity/1000), defense=p.stats.defense, speed=p.stats.speed;
- let enemyPower=enemy.power;
- let hit=.62+p.stats.dexterity/(p.stats.dexterity+enemyPower*2.4)*.28;
- if(Math.random()>hit){addLog("You missed "+enemy.name+".");p.energy=Math.max(0,p.energy-5);save();render();return}
- let damage=Math.max(1,Math.round(power*.13*(.85+Math.random()*.3)-enemy.defense*.035));
- let taken=Math.max(1,Math.round(enemyPower*.08*(.85+Math.random()*.3)-defense*.025));
- p.health=Math.max(0,p.health-taken);
- if(p.health<=0){p.hospital=8;addLog("You lost the fight and were sent to hospital for 8 minutes.")}
- else if(damage>=enemy.hp){let reward=enemy.reward+Math.floor(Math.random()*enemy.reward);p.cash+=reward;gainXP(enemy.xp);addLog("Defeated "+enemy.name+": +$"+fmt(reward)+", +"+enemy.xp+" XP.");}
- else addLog("Hit "+enemy.name+" for "+damage+" damage. The NPC's health is simulated for this encounter.");
- p.energy=Math.max(0,p.energy-5);save();render()
+function npcEncounter(enemy){
+ if(p.jail||p.hospital){addLog('You cannot start an encounter while unavailable.');return}
+ const armed=Math.random()<enemy.armedChance;
+ const weapon=armed?(Math.random()<.55?'knife':'gun'):null;
+ const npc={...enemy,armed,weapon};
+ p.lastEncounter={type:'npc',name:npc.name,armed:npc.armed,weapon:npc.weapon};
+ addLog('👤 Encounter: '+npc.name+(npc.armed?' is carrying a '+npc.weapon+'.':' appears unarmed.')+
+   ' You can choose how to respond.');
+ save();render()
 }
-function deposit(){if(p.cash<100)return addLog("You need $100 cash.");p.cash-=100;p.bank+=100;save();render()}
-function withdraw(){if(p.bank<100)return addLog("You need $100 in the bank.");p.bank-=100;p.cash+=100;save();render()}
+function resolveEncounter(mode){
+ const e=p.lastEncounter;
+ if(!e||e.type!=='npc')return;
+ const basePower=e.power;
+ const weaponBonus=e.weapon==='gun'?1.75:e.weapon==='knife'?1.3:1;
+ if(mode==='leave'){
+   p.lastEncounter=null;addLog('You backed away from the encounter. No fight started.');save();render();return
+ }
+ if(mode==='surrender'){
+   p.jail=e.weapon?4:2;
+   p.wanted=Math.min(100,p.wanted+(e.weapon?7:3));
+   p.lastEncounter=null;
+   addLog('🚓 You surrendered. Police detained you for the encounter.');
+   save();render();return
+ }
+ if(mode==='weapon'){
+   const playerWeapon=p.weapon;
+   if(!playerWeapon){
+     addLog('You do not have a weapon equipped.');
+     return
+   }
+   const escalation=e.armed?0.20:0.08;
+   p.wanted=Math.min(100,p.wanted+Math.round(8+escalation*30));
+   p.bounty+=Math.floor(100+basePower*2);
+   resolveFight(e, true, weaponBonus, true);
+   return
+ }
+ resolveFight(e,false,weaponBonus,false)
+}
+function resolveFight(e,armedResponse,npcWeaponBonus,playerWeapon){
+ const playerPower=p.stats.strength*(1+p.stats.dexterity/1000)*(playerWeapon?1.35:1);
+ const defense=p.stats.defense;
+ const hit=.58+p.stats.dexterity/(p.stats.dexterity+e.power*2.4)*.30;
+ const npcPower=e.power*npcWeaponBonus;
+ const policeChance=e.armed?(armedResponse?.26:.14):.06;
+ if(Math.random()<policeChance){
+   p.jail=5+Math.floor(Math.random()*8);
+   p.wanted=Math.min(100,p.wanted+15);
+   p.bounty+=Math.floor(150+e.power*3);
+   p.lastEncounter=null;
+   addLog('🚨 POLICE ARRIVED: the fight attracted attention. You were arrested and a bounty was added.');
+   save();render();return
+ }
+ if(Math.random()>hit){
+   p.energy=Math.max(0,p.energy-5);
+   if(e.armed){p.health=Math.max(1,p.health-Math.max(1,Math.round(npcPower*.035)))}
+   addLog('❌ You missed '+e.name+'.');
+   save();render();return
+ }
+ const damage=Math.max(1,Math.round(playerPower*.13*(.85+Math.random()*.3)-e.defense*.035));
+ const taken=Math.max(1,Math.round(npcPower*.08*(.85+Math.random()*.3)-defense*.025));
+ p.health=Math.max(0,p.health-taken);
+ p.energy=Math.max(0,p.energy-5);
+ if(p.health<=0){
+   p.hospital=8;
+   p.lastEncounter=null;
+   addLog('🏥 You lost the encounter and went to hospital for 8 minutes.');
+ }else if(damage>=e.hp){
+   const reward=e.reward+Math.floor(Math.random()*e.reward);
+   p.cash+=reward;xp(e.xp);
+   if(playerWeapon){p.wanted=Math.min(100,p.wanted+5);p.bounty+=Math.floor(100+e.power)}
+   p.lastEncounter=null;
+   addLog('🏆 You defeated '+e.name+'. +$'+fmt(reward)+', +'+e.xp+' XP.');
+ }else{
+   if(playerWeapon){p.wanted=Math.min(100,p.wanted+3);p.bounty+=Math.floor(50+e.power)}
+   addLog('⚔️ You hit '+e.name+' for '+damage+' damage, but the encounter continues.');
+ }
+ save();render()
+}
+function fight(e){npcEncounter(e)}
 function buy(item,cost){if(p.cash<cost)return addLog("Not enough cash.");p.cash-=cost;p.inventory[item]=(p.inventory[item]||0)+1;addLog("Bought "+item+".");save();render()}
 function equip(type,item,cost){
  if(p.cash<cost)return addLog("Not enough cash.");
