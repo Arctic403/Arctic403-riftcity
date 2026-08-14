@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RiftCity - Single Player</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0d1117;color:#e6edf3;font-family:system-ui,-apple-system,sans-serif}
+header{padding:18px 16px;background:#161b22;border-bottom:1px solid #30363d;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:24px}.sub{color:#8b949e;font-size:12px}
+main{max-width:1000px;margin:auto;padding:14px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:14px;margin-bottom:12px}
+.stat{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #21262d}.stat:last-child{border:0}
+button{width:100%;padding:12px;margin:5px 0;background:#238636;color:white;border:0;border-radius:8px;font-weight:700}
+button.secondary{background:#30363d}button.danger{background:#da3633}
+button:disabled{opacity:.45}.bar{height:8px;background:#21262d;border-radius:8px;overflow:hidden;margin-top:4px}.fill{height:100%;background:#2f81f7}
+.log{height:150px;overflow:auto;background:#0d1117;border-radius:8px;padding:10px;font-size:13px}
+.item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #21262d}
+.badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#30363d;font-size:11px;margin:2px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}.wide{grid-column:span 2}.full{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><h1>RiftCity</h1><div class="sub">Single-player prototype • Local save • No server required</div></header>
+<main>
+<div id="app"></div>
+</main>
+<script>
+const KEY="riftcity_save_v1";
+const base={
+ name:"Rifter",level:1,xp:0,cash:500,bank:0,energy:100,maxEnergy:100,nerve:10,maxNerve:10,
+ health:100,maxHealth:100,happiness:100,
+ stats:{strength:10,speed:10,defense:10,dexterity:10},
+ inventory:{},
+ crimes:{},gym:{},jail:0,hospital:0
+};
+let p=load();
+function load(){try{return {...base,...JSON.parse(localStorage.getItem(KEY))}}catch(e){return structuredClone(base)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(p))}
+function fmt(n){return Math.floor(n).toLocaleString()}
+function xpNeeded(){return 100+p.level*50}
+function addLog(t){let a=JSON.parse(localStorage.getItem("rift_log")||"[]");a.unshift(new Date().toLocaleTimeString()+" • "+t);localStorage.setItem("rift_log",JSON.stringify(a.slice(0,40)))}
+function log(){return JSON.parse(localStorage.getItem("rift_log")||"[]")}
+function gainXP(n){
+ p.xp+=n;
+ while(p.xp>=xpNeeded()){p.xp-=xpNeeded();p.level++;p.maxEnergy+=2;p.maxNerve+=1;p.maxHealth+=5;p.health=p.maxHealth;addLog("Level up! You reached level "+p.level+".")}
+}
+function spendEnergy(n){if(p.energy<n){addLog("Not enough energy.");return false}p.energy-=n;return true}
+function crime(name,cost,reward,success){
+ if(p.jail>0||p.hospital>0)return addLog("You can't commit crimes while unavailable.");
+ if(p.nerve<cost){addLog("Not enough nerve.");return}
+ p.nerve-=cost;
+ if(Math.random()<success){
+   let r=Math.floor(reward*(.7+Math.random()*.8));
+   p.cash+=r;gainXP(12+p.level*2);p.crimes[name]=(p.crimes[name]||0)+1;
+   addLog("Crime succeeded: +$"+fmt(r)+" and XP.");
+ }else{
+   p.jail=Math.min(20,3+Math.floor(Math.random()*5));gainXP(3);addLog("Crime failed. Jail time: "+p.jail+" minutes.");
+ }
+ save();render();
+}
+function train(stat){
+ if(!spendEnergy(10))return render();
+ let gain=Math.max(1,Math.floor((1+Math.random()*3)*(1+p.happiness/500)));
+ p.stats[stat]+=gain;gainXP(5);addLog("Gym training increased "+stat+" by "+gain+".");save();render()
+}
+function shop(item,cost){
+ if(p.cash<cost)return addLog("Not enough cash.");
+ p.cash-=cost;p.inventory[item]=(p.inventory[item]||0)+1;addLog("Bought "+item+".");save();render()
+}
+function tick(){
+ if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5);
+ if(p.nerve<p.maxNerve)p.nerve++;
+ if(p.jail>0)p.jail--;
+ if(p.hospital>0)p.hospital--;
+ if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2);
+ save();render()
+}
+setInterval(tick,60000);
+
+function reset(){
+ if(confirm("Delete your RiftCity save?")){localStorage.removeItem(KEY);localStorage.removeItem("rift_log");p=structuredClone(base);addLog("New character created.");save();render()}
+}
+function render(){
+ const xpPct=Math.min(100,p.xp/xpNeeded()*100);
+ document.getElementById("app").innerHTML=`
+ <div class="card">
+  <b>${p.name}</b> <span class="badge">Level ${p.level}</span>
+  <div class="sub">XP ${fmt(p.xp)} / ${fmt(xpNeeded())}</div>
+  <div class="bar"><div class="fill" style="width:${xpPct}%"></div></div>
+ </div>
+ <div class="grid">
+  <div class="card wide"><h3>Character</h3>
+   <div class="stat"><span>💰 Cash</span><b>$${fmt(p.cash)}</b></div>
+   <div class="stat"><span>🏦 Bank</span><b>$${fmt(p.bank)}</b></div>
+   <div class="stat"><span>❤️ Health</span><b>${p.health}/${p.maxHealth}</b></div>
+   <div class="stat"><span>⚡ Energy</span><b>${p.energy}/${p.maxEnergy}</b></div>
+   <div class="stat"><span>🧠 Nerve</span><b>${p.nerve}/${p.maxNerve}</b></div>
+   <div class="stat"><span>😊 Happiness</span><b>${p.happiness}</b></div>
+   <button onclick="p.happiness=Math.min(1000,p.happiness+25);addLog('You relaxed. Happiness increased.');save();render()">Relax (+25 happiness)</button>
+  </div>
+  <div class="card wide"><h3>Combat Stats</h3>
+   ${Object.entries(p.stats).map(([k,v])=>`<div class="stat"><span>${k}</span><b>${fmt(v)}</b></div>`).join("")}
+  </div>
+  <div class="card wide"><h3>Gym</h3>
+   ${Object.keys(p.stats).map(s=>`<button onclick="train('${s}')" ${p.energy<10?'disabled':''}>Train ${s} • 10 energy</button>`).join("")}
+  </div>
+  <div class="card wide"><h3>Crimes</h3>
+   <button onclick="crime('Pickpocket',3,120,.72)">Pickpocket • 3 nerve</button>
+   <button onclick="crime('Burglary',5,350,.58)">Burglary • 5 nerve</button>
+   <button onclick="crime('Robbery',7,700,.42)">Robbery • 7 nerve</button>
+   <div class="sub">Success improves as you level up later. For now, the city remains mildly judgmental.</div>
+  </div>
+  <div class="card wide"><h3>City Market</h3>
+   <div class="item"><span>Energy Drink</span><button style="width:45%" onclick="shop('Energy Drink',75)">Buy $75</button></div>
+   <div class="item"><span>Training Food</span><button style="width:45%" onclick="shop('Training Food',150)">Buy $150</button></div>
+   <div class="item"><span>Med Kit</span><button style="width:45%" onclick="shop('Med Kit',250)">Buy $250</button></div>
+  </div>
+  <div class="card wide"><h3>Bank</h3>
+   <button onclick="bankDeposit()">Deposit $100</button>
+   <button onclick="bankWithdraw()">Withdraw $100</button>
+  </div>
+  <div class="card full"><h3>Activity</h3><div class="log">${log().map(x=>`<div>${x}</div>`).join("")||"Your RiftCity story starts here."}</div></div>
+  <div class="card full">
+   ${p.jail?`<b>🔒 Jail:</b> ${p.jail} minute(s) remaining`:""}
+   ${p.hospital?`<b>🏥 Hospital:</b> ${p.hospital} minute(s) remaining`:""}
+   <button class="secondary" onclick="save();addLog('Game saved locally.');render()">Save</button>
+   <button class="danger" onclick="reset()">Reset Character</button>
+  </div>
+ </div>`;
+}
+function bankDeposit(){if(p.cash>=100){p.cash-=100;p.bank+=100;addLog("Deposited $100.");save();render()}else addLog("You don't have $100 cash.")}
+function bankWithdraw(){if(p.bank>=100){p.bank-=100;p.cash+=100;addLog("Withdrew $100.");save();render()}else addLog("You don't have $100 in the bank.")}
+addLog("Welcome to RiftCity.");
+save();render();
+</script>
+</body>
+</html>
