@@ -10,7 +10,9 @@
       stats: { strength: 1, defense: 1, dexterity: 1, speed: 1 },
       inventory: {}, crimes: [], lastEncounter: null,
       // internal: last energy tick (ms since epoch)
-      _lastEnergyTick: Date.now()
+      _lastEnergyTick: Date.now(),
+      // internal: last hospital heal tick
+      _lastHospitalTick: Date.now()
     };
   }
 
@@ -33,6 +35,7 @@
     // ensure certain fields exist
     p.stats = p.stats || { strength:1, defense:1, dexterity:1, speed:1 };
     if (!p._lastEnergyTick) p._lastEnergyTick = Date.now();
+    if (!p._lastHospitalTick) p._lastHospitalTick = Date.now();
   }catch(e){ console.error('init load failed', e); window.p = fresh(); }
 
   // small helpers
@@ -74,6 +77,64 @@
   const ENERGY_REGEN_SECONDS = 600;
   const ENERGY_REGEN_AMOUNT = 5;
 
+  // Hospitalization / Health regeneration configuration
+  // Default: 30 minute hospital stay, heal every 60s by base + level + defense scaling
+  const HOSPITAL_DURATION_MINUTES = 30;
+  const HOSPITAL_TICK_SECONDS = 60;
+  const HOSPITAL_BASE_HEAL = 5; // base heal per tick
+
+  // helper to compute hospital heal per tick (balanced: level and defense scale it)
+  function hospitalHealAmount(){
+    // scale: base + floor(level*0.5) + floor(defense*0.2)
+    const levelBonus = Math.floor((p.level||1) * 0.5);
+    const defBonus = Math.floor((p.stats && p.stats.defense ? p.stats.defense : 0) * 0.2);
+    return Math.max(1, HOSPITAL_BASE_HEAL + levelBonus + defBonus);
+  }
+
+  // helper to admit player to hospital
+  window.admitHospital = window.admitHospital || function(cost){
+    try{
+      cost = typeof cost === 'number' ? cost : 50;
+      if((p.cash||0) < cost){ addLog && addLog('Not enough cash for hospital.'); return; }
+      p.cash -= cost;
+      const now = Date.now();
+      p.hospital = {
+        start: now,
+        end: now + (HOSPITAL_DURATION_MINUTES * 60 * 1000),
+        tickSeconds: HOSPITAL_TICK_SECONDS
+      };
+      // initialize last hospital tick so ticks align to start
+      p._lastHospitalTick = Date.now();
+      addLog && addLog(`Admitted to hospital for ${HOSPITAL_DURATION_MINUTES} minutes. Healing ${hospitalHealAmount()} HP per ${HOSPITAL_TICK_SECONDS}s.`);
+      try{ if(typeof save === 'function') save(); }catch(e){}
+      if(typeof render === 'function') render();
+    }catch(e){ console.error('admitHospital failed', e); }
+  };
+
+  // helper to apply one hospital tick (heal a bit of health)
+  function applyHospitalTick(){
+    try{
+      if(!p.hospital) return;
+      const now = Date.now();
+      const tickMs = (p.hospital.tickSeconds || HOSPITAL_TICK_SECONDS) * 1000;
+      if(now - (p._lastHospitalTick || 0) < tickMs) return; // not yet
+      // compute how many ticks passed
+      const ticks = Math.floor((now - (p._lastHospitalTick || now)) / tickMs) || 1;
+      const amountPerTick = hospitalHealAmount();
+      const totalHeal = ticks * amountPerTick;
+      p.health = Math.min(p.maxHealth || 100, (p.health || 0) + totalHeal);
+      p._lastHospitalTick = (p._lastHospitalTick || now) + ticks * tickMs;
+      addLog && addLog(`Hospital: healed ${totalHeal} HP.`);
+      // if hospital time passed or fully healed, clear hospital
+      if(now >= (p.hospital.end || 0) || p.health >= (p.maxHealth || 100)){
+        addLog && addLog('Discharged from hospital.');
+        delete p.hospital;
+      }
+      try{ if(typeof save === 'function') save(); }catch(e){}
+      if(typeof render === 'function') render();
+    }catch(e){ console.error('applyHospitalTick failed', e); }
+  }
+
   // helper to update the visible energy countdown
   function updateEnergyTimer(){
     const el = document.getElementById('energyTimer');
@@ -105,7 +166,7 @@
     }catch(e){ console.error('train failed', e); }
   };
 
-  // basic no-op actions to avoid missing function errors (others remain placeholders)
+  // basic no-op actions to avoid missing function errors
   ['buy','deposit','withdraw','resetGame','equip','payBail'].forEach(name=>{ if(typeof window[name] !== 'function') window[name] = function(){ addLog && addLog(name+"() not implemented"); }; });
 
   // Page builders
@@ -199,11 +260,32 @@
   };
 
   window.pageCity = window.pageCity || function(){
+    // show hospital status if admitted
+    const hospitalActive = p.hospital && p.hospital.end && Date.now() < p.hospital.end;
+    let hospitalHtml = '';
+    if(hospitalActive){
+      const remainingMs = Math.max(0, (p.hospital.end || 0) - Date.now());
+      const minutes = Math.floor(remainingMs/60000);
+      const seconds = Math.floor((remainingMs%60000)/1000);
+      const nextHeal = hospitalHealAmount();
+      hospitalHtml = `
+        <div class="card"><h3>Hospital — Recovering</h3>
+          <p class="small">Time remaining: ${minutes}m ${seconds}s</p>
+          <p class="small">Next heal: +${nextHeal} HP every ${p.hospital.tickSeconds || HOSPITAL_TICK_SECONDS}s</p>
+        </div>`;
+    } else {
+      hospitalHtml = `
+        <div class="card"><h3>Hospital</h3>
+          <p class="small">Recover health or pay for treatment.</p>
+          <button class="btn" onclick="admitHospital(50)">Pay $50 &amp; Admit (${HOSPITAL_DURATION_MINUTES}m stay)</button>
+        </div>`;
+    }
+
     return `
       <h1 class="title">City</h1>
       <div class="subtitle">Visit locations: Hospital, Bank, Black Market.</div>
       <div class="city-grid">
-        <div class="card"><h3>Hospital</h3><p class="small">Recover health or pay for treatment.</p><button class="btn" onclick="(function(){ if(p.cash<50){ addLog('Not enough cash for treatment.'); return; } p.cash-=50; p.health=Math.min(p.maxHealth,p.health+40); addLog('Treated at hospital. -$50'); if(typeof save==='function') save(); render(); })()">Pay $50</button></div>
+        ${hospitalHtml}
         <div class="card"><h3>Bank</h3><p class="small">Deposit and withdraw funds.</p><button class="btn" onclick="(function(){ if(p.cash<100){ addLog('Not enough cash to deposit'); return; } p.cash-=100; p.bank=(p.bank||0)+100; if(typeof save==='function') save(); render(); })()">Deposit $100</button><button class="btn secondary" onclick="(function(){ if((p.bank||0)<100){ addLog('Not enough in bank'); return; } p.bank-=100; p.cash=(p.cash||0)+100; if(typeof save==='function') save(); render(); })()">Withdraw $100</button></div>
         <div class="card"><h3>Black Market</h3><p class="small">Buy risky items.</p><button class="btn" onclick="(function(){ if(p.cash<200){ addLog('Not enough cash.'); return; } p.cash-=200; addLog('Bought Stolen Watch -$200'); if(typeof save==='function') save(); render(); })()">Buy Stolen Watch $200</button></div>
       </div>
@@ -238,8 +320,9 @@
       if(document.getElementById('home') && !document.getElementById('home').innerHTML.trim()) document.getElementById('home').innerHTML = pageHome();
       if(document.getElementById('character') && !document.getElementById('character').innerHTML.trim()) document.getElementById('character').innerHTML = pageCharacter();
       if(document.getElementById('gym') && !document.getElementById('gym').innerHTML.trim()) document.getElementById('gym').innerHTML = pageGym();
+      // always refresh city because hospital timer updates
+      if(document.getElementById('city')) document.getElementById('city').innerHTML = pageCity();
       if(document.getElementById('crime') && !document.getElementById('crime').innerHTML.trim()) document.getElementById('crime').innerHTML = pageCrime();
-      if(document.getElementById('city') && !document.getElementById('city').innerHTML.trim()) document.getElementById('city').innerHTML = pageCity();
       if(document.getElementById('more') && !document.getElementById('more').innerHTML.trim()) document.getElementById('more').innerHTML = pageMore();
 
       // update character stat fields if present
@@ -289,11 +372,11 @@
     }catch(e){ console.error('render failed', e); }
   };
 
-  // Energy regen logic (call once after p is loaded)
-  (function setupEnergyRegen(){
+  // Energy regen and hospital logic (call once after p is loaded)
+  (function setupRegenLoops(){
     try{
-      // apply missed ticks since last saved time (so reloading catches up)
-      function applyMissedTicks(){
+      // apply missed energy ticks
+      function applyMissedEnergy(){
         const now = Date.now();
         const last = p._lastEnergyTick || now;
         const tickMs = ENERGY_REGEN_SECONDS * 1000;
@@ -305,28 +388,60 @@
           try{ if(typeof save === 'function') save(); }catch(e){}
         }
       }
-      applyMissedTicks();
+      applyMissedEnergy();
 
-      // interval: update countdown every second and apply ticks when due
+      // apply missed hospital ticks
+      function applyMissedHospital(){
+        if(!p.hospital) return;
+        const now = Date.now();
+        const last = p._lastHospitalTick || now;
+        const tickMs = (p.hospital.tickSeconds || HOSPITAL_TICK_SECONDS) * 1000;
+        const elapsed = Math.max(0, now - last);
+        const ticks = Math.floor(elapsed / tickMs);
+        if(ticks > 0){
+          const amountPerTick = hospitalHealAmount();
+          const totalHeal = ticks * amountPerTick;
+          p.health = Math.min(p.maxHealth||100, (p.health||0) + totalHeal);
+          p._lastHospitalTick = (p._lastHospitalTick || now) + ticks * tickMs;
+          // if hospital time passed or fully healed, clear hospital
+          if(now >= (p.hospital.end || 0) || p.health >= (p.maxHealth || 100)){
+            delete p.hospital;
+          }
+          try{ if(typeof save === 'function') save(); }catch(e){}
+        }
+      }
+      applyMissedHospital();
+
+      // main interval: update countdowns and apply ticks when due
       setInterval(()=>{
         try{
           const now = Date.now();
-          const tickMs = ENERGY_REGEN_SECONDS * 1000;
-          if(now - (p._lastEnergyTick || 0) >= tickMs){
-            const ticks = Math.floor((now - (p._lastEnergyTick || 0)) / tickMs);
+          const energyTickMs = ENERGY_REGEN_SECONDS * 1000;
+          if(now - (p._lastEnergyTick || 0) >= energyTickMs){
+            const ticks = Math.floor((now - (p._lastEnergyTick || 0)) / energyTickMs);
             p.energy = Math.min(p.maxEnergy||100, (p.energy||0) + ticks * ENERGY_REGEN_AMOUNT);
-            p._lastEnergyTick = (p._lastEnergyTick || now) + ticks * tickMs;
+            p._lastEnergyTick = (p._lastEnergyTick || now) + ticks * energyTickMs;
             try{ if(typeof save === 'function') save(); }catch(e){}
             if(typeof updateEnergyTimer === 'function') updateEnergyTimer();
             if(typeof render === 'function') render();
           } else {
             if(typeof updateEnergyTimer === 'function') updateEnergyTimer();
-            if(typeof render === 'function') render();
           }
-        }catch(e){ console.error('energy tick failed', e); }
+
+          // hospital ticks
+          if(p.hospital){
+            const hospTickMs = (p.hospital.tickSeconds || HOSPITAL_TICK_SECONDS) * 1000;
+            if(now - (p._lastHospitalTick || 0) >= hospTickMs){
+              applyHospitalTick();
+            }
+          }
+
+          // regular render tick for clocks and timers
+          if(typeof render === 'function') render();
+        }catch(e){ console.error('regen loop failed', e); }
       }, 1000);
 
-    }catch(e){ console.error('setupEnergyRegen failed', e); }
+    }catch(e){ console.error('setupRegenLoops failed', e); }
   })();
 
   // initial population and attach simple tab handler (in case game-core didn't attach)
