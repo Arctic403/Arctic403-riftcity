@@ -1,148 +1,55 @@
-<!-- index.html reworked to load extracted assets but still runnable standalone -->
+<!-- index.html reworked to load extracted assets but runnable standalone -->
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>RiftCity</title>
-<link rel="stylesheet" href="assets/css/app.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>RiftCity</title>
+  <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="toprow"><div class="brand">RIFTCITY</div><span class="badge" id="levelPill">Level 1</span></div>
-    <div class="topstats">
-      <span class="pill">💰 <b id="cashTop">$0</b></span>
-      <span class="pill">❤️ <b id="healthTop">0/0</b></span>
-      <span class="pill">⚡ <b id="energyTop">0/0</b></span>
-      <span class="pill">🧠 <b id="nerveTop">0/0</b></span>
-      <span class="pill">😊 <b id="happyTop">0</b></span>
-    </div>
-  </header>
-
-  <nav class="tabs" id="tabs">
-    <button class="tab active" data-page="home">⌂ Home</button>
-    <button class="tab" data-page="character">◉ Character</button>
-    <button class="tab" data-page="gym">⚔ Gym</button>
-    <button class="tab" data-page="crime">💀 Crime</button>
-    <button class="tab" data-page="city">▦ City</button>
-    <button class="tab" data-page="more">☰ More</button>
-  </nav>
-
-  <main class="content">
-    <section class="page active" id="home"></section>
-    <section class="page" id="character"></section>
-    <section class="page" id="gym"></section>
-    <section class="page" id="crime"></section>
-    <section class="page" id="city"></section>
-    <section class="page" id="more"></section>
-  </main>
-</div>
-
-<div class="modal-overlay" id="modal"><div class="modal"><h2 id="modalTitle">Interaction</h2><div class="modal-text" id="modalText"></div><div class="modal-actions" id="modalActions"></div></div></div>
-
-<script src="assets/js/api.js"></script>
-<script src="assets/js/game-core.js"></script>
-<script src="assets/js/crime.js"></script>
-<script>
-// Inline minimal remaining logic to keep app runnable without build. This is largely copied from original.
-const fresh = ()=>({ name:"Rifter", level:1, xp:0, cash:500, bank:0, energy:100, maxEnergy:100, nerve:10, maxNerve:10, health:100, maxHealth:100, happiness:100, defaultHappiness:100, happinessResetAt:Date.now()+1800000, jail:0, hospital:0, wanted:0, bounty:0, weapon:null, armor:null, stats:{strength:0,defense:0,dexterity:0,speed:0}, inventory:{}, crimes:{}, gymSessions:0, lastEncounter:null });
-let p = load();
-function fmt(n){return Math.floor(n).toLocaleString();}
-function xpNeed(){return Math.floor(100*Math.pow(1.12,p.level-1));}
-function xpPct(){return Math.min(100,p.xp/xpNeed()*100);} 
-function totalStats(){return Object.values(p.stats).reduce((a,b)=>a+b,0);} 
-function gymGain(stat){const base=1.9;const happy=1+Math.min(p.happiness,500)/1000;const levelDiminish=1/(1+Math.pow(p.stats[stat]/250,0.72));const longTerm=1/(1+Math.pow(totalStats()/1200,0.55));const roll=0.82+Math.random()*0.36;return Math.max(0.01,base*happy*levelDiminish*longTerm*roll);} 
-function spendEnergy(n){ if(p.energy<n){ addLog("Not enough energy."); return false;} p.energy-=n; return true;} 
-function gainXP(n){ p.xp+=n; while(p.xp>=xpNeed()){ p.xp-=xpNeed(); p.level++; p.maxEnergy+=2; p.maxNerve+=1; p.maxHealth+=5; p.health=p.maxHealth; addLog("Level up! You reached level "+p.level+"."); } }
-function showModal(title,text,actions){ document.getElementById('modalTitle').textContent=title; document.getElementById('modalText').textContent=text; const actionsDiv=document.getElementById('modalActions'); actionsDiv.innerHTML=''; actions.forEach(action=>{ const btn=document.createElement('button'); btn.className='btn'; btn.textContent=action.text; btn.onclick=()=>{ action.callback(); document.getElementById('modal').classList.remove('active'); }; actionsDiv.appendChild(btn); }); document.getElementById('modal').classList.add('active'); }
-
-function attemptCrime(n,reward,chance){ const roll=Math.random(); const finalChance=Math.min(0.9,chance+p.level*0.008); let outcome, finalReward=0; if(roll<finalChance*0.10){ outcome='critical'; p.jail=7+Math.floor(Math.random()*9); p.wanted=Math.min(100,p.wanted+18); p.bounty+=Math.floor(reward*0.8); gainXP(6); addLog('⚠️ CRITICAL FAIL: '+n+' went badly. You were caught.'); } else if(roll<finalChance){ outcome='success'; finalReward=Math.floor(reward*(0.75+Math.random()*0.5)*(1+p.level*0.012)); p.cash+=finalReward; p.crimes[n]=(p.crimes[n]||0)+1; gainXP(15+p.level*2); addLog('✅ SUCCESS: '+n+' worked. +$'+fmt(finalReward)+' and XP.'); } else if(roll<finalChance+(1-finalChance)*0.22){ outcome='failed'; p.wanted=Math.min(100,p.wanted+6); addLog('❌ FAILED: '+n+' failed, but you escaped.'); } else { outcome='arrested'; p.jail=3+Math.floor(Math.random()*7); p.wanted=0; p.bounty+=Math.floor(reward*0.35); gainXP(4); addLog('🚨 ARRESTED: '+n+' failed and police caught you.'); } p.lastEncounter={type:'crime',name:n,outcome,reward:finalReward}; save(); render(); }
-
-// Minimal Home page so render() doesn't fail
-function pageHome(){
-  return `
-    <h1 class="title">Welcome back, ${p.name}</h1>
-    <div class="subtitle">Build a character over weeks and months, not a weekend.</div>
-
-    <div class="grid grid2">
-      <div class="card">
-        <h3>Overview</h3>
-        <div class="meterline"><span>Level ${p.level}</span><b>${fmt(p.xp)} / ${fmt(xpNeed())} XP</b></div>
-        <div class="bar"><i style="width:${xpPct()}%"></i></div>
-        <div class="small">Cash: $${fmt(p.cash)}</div>
+  <div class="app">
+    <header class="top">
+      <div class="toprow"><div class="brand">RIFTCITY</div><span class="badge" id="levelPill">Level 1</span></div>
+      <div class="topstats">
+        <span class="pill">💰 <b id="cashTop">$0</b></span>
+        <span class="pill">❤️ <b id="healthTop">0/0</b></span>
+        <span class="pill">⚡ <b id="energyTop">0/0</b></span>
+        <span class="pill">🧠 <b id="nerveTop">0/0</b></span>
+        <span class="pill">😊 <b id="happyTop">0</b></span>
       </div>
-      <div class="card">
-        <h3>Last</h3>
-        <div class="small">${p.lastEncounter?JSON.stringify(p.lastEncounter):'No recent events'}</div>
-      </div>
-    </div>
-  `;
-}
+    </header>
 
-// Character page
-function pageCharacter(){
-  return `
-    <h1 class="title">Character</h1>
-    <div class="subtitle">Your stats and equipment.</div>
-    <div class="grid grid2">
-      <div class="card">
-        <h3>Stats</h3>
-        <div class="stat"><span>Strength</span><b>${(p.stats.strength||0).toFixed? (p.stats.strength||0).toFixed(2) : (p.stats.strength||0)}</b></div>
-        <div class="stat"><span>Defense</span><b>${(p.stats.defense||0).toFixed? (p.stats.defense||0).toFixed(2) : (p.stats.defense||0)}</b></div>
-        <div class="stat"><span>Dexterity</span><b>${(p.stats.dexterity||0).toFixed? (p.stats.dexterity||0).toFixed(2) : (p.stats.dexterity||0)}</b></div>
-        <div class="stat"><span>Speed</span><b>${(p.stats.speed||0).toFixed? (p.stats.speed||0).toFixed(2) : (p.stats.speed||0)}</b></div>
-      </div>
-      <div class="card">
-        <h3>Equipment</h3>
-        <div class="small">Weapon: ${p.weapon||'None'}</div>
-        <div class="small">Armor: ${p.armor||'None'}</div>
-      </div>
-    </div>
-  `;
-}
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-page="home">⌂ Home</button>
+      <button class="tab" data-page="character">◉ Character</button>
+      <button class="tab" data-page="gym">⚔ Gym</button>
+      <button class="tab" data-page="crime">💀 Crime</button>
+      <button class="tab" data-page="city">▦ City</button>
+      <button class="tab" data-page="more">☰ More</button>
+    </nav>
 
-// Gym page
-function pageGym(){
-  return `
-    <h1 class="title">Gym</h1>
-    <div class="subtitle">Train to increase stats. Costs energy.</div>
-    <div class="grid grid3">
-      <div class="card"><h3>Strength</h3><p class="small">Train to increase strength</p><button class="btn" onclick="train('strength')">Train Strength</button></div>
-      <div class="card"><h3>Defense</h3><p class="small">Train to increase defense</p><button class="btn" onclick="train('defense')">Train Defense</button></div>
-      <div class="card"><h3>Dexterity</h3><p class="small">Train to increase dexterity</p><button class="btn" onclick="train('dexterity')">Train Dexterity</button></div>
-    </div>
-  `;
-}
-
-function pageCrime(){ return `
-  <h1 class="title">Crime</h1>
-  <div class="subtitle">Choose your illicit activity. Nerve cost and payouts vary.</div>
-  <div class="grid grid3">
-    <div class="card"><h3>Pickpocket</h3><p class="small">Low risk, small payout</p><button class="btn" onclick="Crime.crime('Pickpocket',2,50,0.72)">Attempt</button></div>
-    <div class="card"><h3>Burglary</h3><p class="small">Medium risk, moderate payout</p><button class="btn" onclick="Crime.crime('Burglary',6,300,0.52)">Attempt</button></div>
-    <div class="card"><h3>Mugging</h3><p class="small">Medium risk, quick money</p><button class="btn" onclick="Crime.crime('Mugging',4,120,0.60)">Attempt</button></div>
+    <main class="content">
+      <section class="page active" id="home"></section>
+      <section class="page" id="character"></section>
+      <section class="page" id="gym"></section>
+      <section class="page" id="crime"></section>
+      <section class="page" id="city"></section>
+      <section class="page" id="more"></section>
+    </main>
   </div>
-  <div class="card"><h3>Last outcome</h3><div class="small">${p.lastEncounter?JSON.stringify(p.lastEncounter):'None yet'}</div></div>
-` }
 
-function pageCity(){ return `
-  <h1 class="title">City</h1>
-  <div class="subtitle">Visit locations: Hospital, Bank, Black Market.</div>
-  <div class="city-grid">
-    <div class="card"><h3>Hospital</h3><p class="small">Recover health or pay for treatment.</p><button class="btn" onclick="(function(){ if(p.cash<50){ addLog('Not enough cash for treatment.'); return; } p.cash-=50; p.health=Math.min(p.maxHealth,p.health+40); addLog('Treated at hospital. -$50'); save(); render(); })()">Pay $50</button></div>
-    <div class="card"><h3>Bank</h3><p class="small">Deposit and withdraw funds.</p><button class="btn" onclick="deposit()">Deposit $100</button><button class="btn secondary" onclick="withdraw()">Withdraw $100</button></div>
-    <div class="card"><h3>Black Market</h3><p class="small">Buy risky items.</p><button class="btn" onclick="(function(){ if(p.cash<200){ addLog('Not enough cash.'); return; } buy('Stolen Watch',200); })()">Buy Stolen Watch $200</button></div>
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <h2 id="modalTitle">Interaction</h2>
+      <div class="modal-text" id="modalText"></div>
+      <div class="modal-actions" id="modalActions"></div>
+    </div>
   </div>
-` }
 
-function render(){
-  // Defensive: if modal has no actions, ensure it's hidden so it doesn't block UI
-  try{
-    const actionsDiv = document.getElementById('modalActions');
-    if(!actionsDiv || actionsDiv.children.length === 0){
-      document.getElementById('modal').classList.remove('active');
-    }
-  }catch(e){/* ignore */}
-
-  document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerv[...],
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/game-core.js"></script>
+  <script src="assets/js/crime.js"></script>
+  <script src="assets/js/init.js"></script>
+</body>
+</html>
