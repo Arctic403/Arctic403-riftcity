@@ -80,6 +80,41 @@ function pageHome(){
   `;
 }
 
+// Character page
+function pageCharacter(){
+  return `
+    <h1 class="title">Character</h1>
+    <div class="subtitle">Your stats and equipment.</div>
+    <div class="grid grid2">
+      <div class="card">
+        <h3>Stats</h3>
+        <div class="stat"><span>Strength</span><b>${(p.stats.strength||0).toFixed? (p.stats.strength||0).toFixed(2) : (p.stats.strength||0)}</b></div>
+        <div class="stat"><span>Defense</span><b>${(p.stats.defense||0).toFixed? (p.stats.defense||0).toFixed(2) : (p.stats.defense||0)}</b></div>
+        <div class="stat"><span>Dexterity</span><b>${(p.stats.dexterity||0).toFixed? (p.stats.dexterity||0).toFixed(2) : (p.stats.dexterity||0)}</b></div>
+        <div class="stat"><span>Speed</span><b>${(p.stats.speed||0).toFixed? (p.stats.speed||0).toFixed(2) : (p.stats.speed||0)}</b></div>
+      </div>
+      <div class="card">
+        <h3>Equipment</h3>
+        <div class="small">Weapon: ${p.weapon||'None'}</div>
+        <div class="small">Armor: ${p.armor||'None'}</div>
+      </div>
+    </div>
+  `;
+}
+
+// Gym page
+function pageGym(){
+  return `
+    <h1 class="title">Gym</h1>
+    <div class="subtitle">Train to increase stats. Costs energy.</div>
+    <div class="grid grid3">
+      <div class="card"><h3>Strength</h3><p class="small">Train to increase strength</p><button class="btn" onclick="train('strength')">Train Strength</button></div>
+      <div class="card"><h3>Defense</h3><p class="small">Train to increase defense</p><button class="btn" onclick="train('defense')">Train Defense</button></div>
+      <div class="card"><h3>Dexterity</h3><p class="small">Train to increase dexterity</p><button class="btn" onclick="train('dexterity')">Train Dexterity</button></div>
+    </div>
+  `;
+}
+
 function pageCrime(){ return `
   <h1 class="title">Crime</h1>
   <div class="subtitle">Choose your illicit activity. Nerve cost and payouts vary.</div>
@@ -101,12 +136,12 @@ function pageCity(){ return `
   </div>
 ` }
 
-function render(){ document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerve+'/'+p.maxNerve; document.getElementById('healthTop').textContent=p.health+'/'+p.maxHealth; document.getElementById('happyTop').textContent=p.happiness; document.getElementById('levelPill').textContent='Level '+p.level; document.getElementById('home').innerHTML=pageHome(); document.getElementById('crime').innerHTML=pageCrime(); document.getElementById('city').innerHTML=pageCity(); // minimal other pages
+function render(){ document.getElementById('cashTop').textContent='$'+fmt(p.cash); document.getElementById('energyTop').textContent=p.energy+'/'+p.maxEnergy; document.getElementById('nerveTop').textContent=p.nerve+'/'+p.maxNerve; document.getElementById('healthTop').textContent=p.health+'/'+p.maxHealth; document.getElementById('happyTop').textContent=p.happiness; document.getElementById('levelPill').textContent='Level '+p.level; document.getElementById('home').innerHTML=pageHome(); document.getElementById('character').innerHTML=pageCharacter(); document.getElementById('gym').innerHTML=pageGym(); document.getElementById('crime').innerHTML=pageCrime(); document.getElementById('city').innerHTML=pageCity(); // minimal other pages
  const l=logs(); document.getElementById('more').innerHTML='<div class="card"><h3>Logs</h3><div class="log">'+l.map(x=>'<div>'+x+'</div>').join('')+'</div><div style="margin-top:8px"><button class="btn secondary" onclick="resetGame()">Reset Save</button></div></div>';
 }
 
-// tab wiring
-document.getElementById('tabs').addEventListener('click',e=>{ if(!e.target.matches('.tab')) return; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); e.target.classList.add('active'); const page=e.target.dataset.page; document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(page).classList.add('active'); render(); });
+// tab wiring (use closest to handle inner element clicks)
+document.getElementById('tabs').addEventListener('click',e=>{ const btn = e.target.closest('.tab'); if(!btn) return; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); const pageName = btn.dataset.page; if(!pageName) return; document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active')); const pageEl = document.getElementById(pageName); if(pageEl) pageEl.classList.add('active'); render(); });
 
 function updateTime(){ if(Date.now()>=p.happinessResetAt){ p.happiness=p.defaultHappiness; p.happinessResetAt=Date.now()+1800000; addLog('Happiness reset to default.'); } if(p.jail>0)p.jail--; if(p.hospital>0)p.hospital--; if(p.energy<p.maxEnergy)p.energy=Math.min(p.maxEnergy,p.energy+5); if(p.nerve<p.maxNerve)p.nerve++; if(p.health<p.maxHealth && p.hospital===0)p.health=Math.min(p.maxHealth,p.health+2); save(); render(); }
 setInterval(updateTime,60000);
