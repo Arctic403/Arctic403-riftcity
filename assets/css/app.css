@@ -1,0 +1,8 @@
+/* Minimal CSS extraction: keep same variables for now */
+:root{--bg:#080b10;--panel:#111720;--panel2:#171e29;--line:#26303d;--text:#edf2f7;--muted:#8995a5;--accent:#3b82f6;--good:#31c48d;--bad:#ef5350;--gold:#e4b84a}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#121a25 0,#080b10 55%);color:var(--text);font:15px system-ui,-apple-system,BlinkMacSystemFont,sans-serif;min-height:100vh}
+.btn{display:block;width:100%;padding:12px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:8px;text-align:left}
+.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.city-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
