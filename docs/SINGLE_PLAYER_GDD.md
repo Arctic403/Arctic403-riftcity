@@ -66,6 +66,12 @@ We allow randomness and hand-tuned variance in outcomes, but saves must still su
   - Autosave on checkpoint reach and allow manual save in pause menu.
   - On load, restore player_state, choice_history, and re-seed RNG with saved rng_seed. If a designer wants true non-determinism, they can ignore the saved seed and generate a new one (but include that choice in telemetry).
   - Acceptance: No lost progress beyond last checkpoint; ability to reproduce a session for debugging when using saved seeds.
+- Hospitalization, not death:
+  - Players do not die in RiftCity; when health or critical status would otherwise cause a death state, the player becomes hospitalized.
+  - Hospitalization transitions the player to a hospital state/scene where recovery options are presented (immediate revive with penalty, wait and recover, or use items/currency to speed recovery).
+  - Hospitalization consequences are designer-tuned: examples include loss of a fraction of carried currency, temporary stat penalties, time penalty, or forced respawn at a nearby hospital checkpoint.
+  - On hospitalization, the save system should record the event in choice_history and may optionally advance the rng_seed for subsequent events; the canonical save restores the player to the hospital/respawn point consistent with the checkpoint rules.
+  - Acceptance: Players never permanently lose their character; hospitalization is a recoverable state with clear player-facing feedback on penalties and options.
 - Replay & partial determinism:
   - Full replay (input recording) is optional — we prioritise lightweight JSON saves. If full replay is needed for QA, we can add an input log that records player inputs or deterministic event logs.
 - Save compatibility & versioning:
@@ -80,7 +86,7 @@ We allow randomness and hand-tuned variance in outcomes, but saves must still su
 
 ## Telemetry (minimal)
 Events to record:
-- Session start/end, tutorial completion, encounter start/end, death location, upgrade choices.
+- Session start/end, tutorial completion, encounter start/end, hospitalization events and locations, upgrade choices.
 Purpose: collect data from early playtests (target >=20 sessions) to inform balance.
 
 ## Short sprint backlog (first 2 weeks)
@@ -88,7 +94,7 @@ Purpose: collect data from early playtests (target >=20 sessions) to inform bala
 2. Add basic save/checkpoint system (file-based) with rng_seed support.
 3. Implement interactive tutorial scene (movement + first combat mechanic).
 4. Create spawner and 5 encounter templates, data-driven tuning configs.
-5. Add simple telemetry hooks for tutorial completion and deaths.
+5. Add simple telemetry hooks for tutorial completion and hospitalization events.
 6. Polish controls (input mapping and responsiveness) and add basic HUD elements.
 
 ## Implementation notes & priorities
