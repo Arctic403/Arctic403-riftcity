@@ -1,56 +1,18 @@
-<!-- index.html reworked to load extracted assets but runnable standalone -->
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>RiftCity</title>
-  <link rel="stylesheet" href="assets/css/app.css">
-</head>
-<body>
-  <div class="app">
-    <header class="top">
-      <div class="toprow"><div class="brand">RIFTCITY</div><span class="badge" id="levelPill">Level 1</span></div>
-      <div class="topstats">
-        <span class="pill">💰 <b id="cashTop">$0</b></span>
-        <span class="pill">❤️ <b id="healthTop">0/0</b></span>
-        <span class="pill">⚡ <b id="energyTop">0/0</b> <span id="energyTimer" style="margin-left:8px;font-size:12px;color:var(--muted)"></span></span>
-        <span class="pill">🧠 <b id="nerveTop">0/0</b></span>
-        <span class="pill">😊 <b id="happyTop">0</b></span>
-        <span class="pill">🕒 <b id="tzTop">EST</b></span>
-      </div>
-    </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b12" />
+    <meta
+      name="description"
+      content="RiftCity — build your character, make your moves, and rule the city."
+    />
+    <title>RiftCity</title>
+  </head>
 
-    <nav class="tabs" id="tabs">
-      <button class="tab active" data-page="home">⌂ Home</button>
-      <button class="tab" data-page="character">◉ Character</button>
-      <button class="tab" data-page="gym">⚔ Gym</button>
-      <button class="tab" data-page="crime">💀 Crime</button>
-      <button class="tab" data-page="city">▦ City</button>
-      <button class="tab" data-page="more">☰ More</button>
-    </nav>
-
-    <main class="content">
-      <section class="page active" id="home"></section>
-      <section class="page" id="character"></section>
-      <section class="page" id="gym"></section>
-      <section class="page" id="crime"></section>
-      <section class="page" id="city"></section>
-      <section class="page" id="more"></section>
-    </main>
-  </div>
-
-  <div class="modal-overlay" id="modal">
-    <div class="modal">
-      <h2 id="modalTitle">Interaction</h2>
-      <div class="modal-text" id="modalText"></div>
-      <div class="modal-actions" id="modalActions"></div>
-    </div>
-  </div>
-
-  <script src="assets/js/api.js"></script>
-  <script src="assets/js/game-core.js"></script>
-  <script src="assets/js/crime.js"></script>
-  <script src="assets/js/init.js"></script>
-</body>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
